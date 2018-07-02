@@ -20,10 +20,10 @@ How:
     2. Install ansible
         a. Go to command prompt, type bash
         b. sudo -s
-        c. apt-get update
-        d. apt-get upgrade
-        e. apt-get -y install python-pip python-dev libffi-dev libssl-dev
-        f. pip install ansible
+        c. apt-get install software-properties-common
+        d. sudo apt-add-repository ppa:ansible/ansible
+        e. sudo apt-get update
+        f. sudo apt-get install ansible
     3. Put the "hosts" file in the /etc/ansible directory
     4. Use the command ssh-keygen to create an ssh key
     5. Option 1: Run these commands sudo -i, cd ~/.ssh, sftp 
