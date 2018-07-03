@@ -1,10 +1,10 @@
 # ubuntu-router
 
 What: 
-    An Ansible meta-automation solution for automatically creating a home ubuntu router.
+    An Ansible meta-automation solution for automatically creating a home ubuntu server router.
 
 When:
-    Last Updated: 2018-07-02
+    Last Updated: 2018-07-03
     First Started: 2018-07-02
 
 Why:
@@ -33,4 +33,5 @@ How:
         a. add a line at the top of the following
             i. [router]
             ii. XXX.XXX.XXX.XXX ansible_user=user (replace user with router username & replace XXX.XXX.XXX.XXX with your router's IP address)
-    4. Run the ansible script with: ansible-playbook main.yml
+    4. Manually install python2.7 on the ubuntu server router: sudo apt-get install python
+    5. Run the ansible script with: ansible-playbook main.yml --ask-sudo-pass
