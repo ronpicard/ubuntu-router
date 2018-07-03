@@ -1,0 +1,174 @@
+- name: SETUP_VPN
+  hosts: pi
+  tasks:
+
+    - name: "UPDATE_AND_UPGRADE PI"
+      command: /bin/bash -c "apt-get update -y && apt-get upgrade -y"
+      become: true
+      become_user: root
+
+    - name: "INSTALL_PYTHON_PIP"
+      command: /bin/bash -c "apt-get install python-pip -y"
+      become: true
+      become_user: root
+
+    - name: "INSTALL_PEXPECT_AND_LIBSSL"
+      command: /bin/bash -c "yes | pip install pexpect && apt-get install libssl-dev -y"
+      become: true
+      become_user: root
+
+    - name: "INSTALL_OPENVPN"
+      command: /bin/bash -c "apt-get install openvpn"
+      become: true
+      become_user: root
+
+    - name: "COPY_EASY_RSA"
+      command: /bin/bash -c "cp -r /usr/share/easy-rsa /etc/openvpn/easy-rsa"
+      args:
+         chdir: /etc/openvpn/easy-rsa/
+      become: true
+      become_user: root
+
+    - name: "COPY_OPENSSL"
+      command: /bin/bash -c "cp openssl-1.0.0.cnf openssl.cnf"
+      args:
+         chdir: /etc/openvpn/easy-rsa/
+      become: true
+      become_user: root
+
+    - name: "SET_VARS, CLEAN_ALL, BUILD_CA"
+      expect:
+      become: true
+      become_user: root
+      args:
+        command: /bin/bash -c "source ./vars && ./clean-all && ./build-ca"
+        chdir: /etc/openvpn/easy-rsa
+        responses:
+          'Country Name \(2 letter code\) \[US\]:': ''
+          'State or Province Name \(full name\) \[CA\]:': ''
+          'Locality Name \(eg\, city\) \[SanFrancisco\]:': ''
+          'Organization Name \(eg\, company\) .*': ''
+          'Organizational Unit Name .*': ''
+          'Common Name \(eg\, your name .*': ''
+          'Name .*': ''
+          'Email Address': ''
+        echo: yes
+
+    - name: "SET_VARS, BUILD_SERVER"
+      command: /bin/bash -c "source ./vars && ./pkitool --server server"
+      args:
+        chdir: /etc/openvpn/easy-rsa
+      become: true
+      become_user: root  
+
+    - name: "SET_VARS, BUILD_CLIENTS"
+      command: /bin/bash -c "source ./vars && ./pkitool client1 && ./pkitool client2 && ./pkitool client3 && ./pkitool client3 && ./pkitool client4 && ./pkitool client5 && ./pkitool client6 && ./pkitool client7 && ./pkitool client8 && ./pkitool client9 && ./pkitool client10"
+      args:
+        chdir: /etc/openvpn/easy-rsa
+      become: true
+      become_user: root  
+
+    - name: "SET_VARS, BUILD_DH"
+      command: /bin/bash -c "source ./vars && ./build-dh"
+      args:
+         chdir: /etc/openvpn/easy-rsa/
+      become: true
+      become_user: root
+
+    - name: "ADD_TLS_AUTH"
+      command: openvpn --genkey --secret ta.key
+      args:
+         chdir: /etc/openvpn/easy-rsa/keys
+      become: true
+      become_user: root
+
+    - name: "MOVE_FILES_TO_PI_DIR"
+      command: /bin/bash -c "cp ca.crt /home/pi/ca.crt && cp client1.crt /home/pi/client1.crt && cp client1.key /home/pi/client1.key && cp ta.key /home/pi/ta.key"
+      args:
+         chdir: /etc/openvpn/easy-rsa/keys/
+      become: true
+      become_user: root
+
+    - name: "CHANGE_ACCESS_PERMISSIONS"
+      command: /bin/bash -c "chmod ugo+rw ca.crt && chmod ugo+rw client1.crt && chmod ugo+rw client1.key && chmod ugo+rw ta.key"
+      args:
+         chdir: /home/pi/
+      become: true
+      become_user: root
+
+    - name: "CREATE_SERVER_CONFIGURATION_FILE"
+      file: 
+        path: "/etc/openvpn/easy-rsa/keys/server.conf"
+        state: touch
+      become: true
+      become_user: root
+
+    - lineinfile:
+        path: /etc/openvpn/easy-rsa/keys/server.conf
+        line: '{{ item }}'
+      with_items:
+        - ''
+        - port 1194
+        - proto tcp
+        - dev tun
+        - ca ca.crt
+        - cert server.crt
+        - key server.key
+        - dh dh2048.pem
+        - server 10.8.0.0 255.255.255.0
+        - ifconfig-pool-persist ipp.txt
+        - push "redirect-gateway def1 bypass-dhcp"
+        - push "dhcp-option DNS 8.8.8.8"
+        - push "dhcp-option DNS 8.8.4.4"
+        - client-to-client
+        - keepalive 10 120
+        - tls-auth ta.key 0
+        - cipher AES-256-CBC
+        - persist-key
+        - persist-tun
+        - status openvpn-status.log
+        - verb 3
+        - ''
+      become: true
+      become_user: root
+
+    - name: "CREATE_SETUP_SHELL_FILE"
+      file: 
+        path: "/etc/openvpn/easy-rsa/keys/setup.sh"
+        state: touch
+      become: true
+      become_user: root
+
+    - name: "CHANGE_ACCESS_PERMISSION_ON_SETUP_SHELL_FILE"
+      command: /bin/bash -c "chmod 755 setup.sh"
+      args:
+         chdir: /etc/openvpn/easy-rsa/keys/
+      become: true
+      become_user: root
+
+    - lineinfile:
+        path: /etc/openvpn/easy-rsa/keys/setup.sh
+        line: '{{ item }}'
+      with_items:
+        - '#!/bin/sh'
+        - ''
+        - 'echo 1 > /proc/sys/net/ipv4/ip_forward'
+        - 'iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE'
+        - ''
+        - 'exit 0'
+      become: true
+      become_user: root
+
+    - lineinfile:
+        path: /etc/rc.local
+        line: '{{ item }}'
+        insertbefore: 'exit 0'
+      with_items:
+        - ''
+        - 'sudo -s' 
+        - 'sh /etc/openvpn/easy-rsa/keys/setup.sh'
+        - 'cd /etc/openvpn/easy-rsa/keys'
+        - 'openvpn server.conf &'
+        - ''
+      become: true
+      become_user: root

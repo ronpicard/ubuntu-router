@@ -1,0 +1,10 @@
+- import_playbook: build_vpn_playbook.yml
+- import_playbook: create_client2_config_playbook.yml
+- import_playbook: fetch_client1_from_pi_playbook.yml
+- import_playbook: copy_client1_to_android_playbook.yml
+- import_playbook: remove_local_client1_playbook.yml
+- import_playbook: fetch_client2_from_pi_playbook.yml
+- import_playbook: copy_client2_to_surface_playbook.yml
+- import_playbook: remove_local_client2_playbook.yml
+- import_playbook: remove_client2_config_playbook.yml
+- import_playbook: restart_pi_playbook.yml

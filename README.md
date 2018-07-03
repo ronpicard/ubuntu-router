@@ -24,9 +24,13 @@ How:
         d. sudo apt-add-repository ppa:ansible/ansible
         e. sudo apt-get update
         f. sudo apt-get install ansible
-    3. Put the "hosts" file in the /etc/ansible directory
-    4. Use the command ssh-keygen to create an ssh key
-    5. Option 1: Run these commands sudo -i, cd ~/.ssh, sftp 
-    user@XXX.XXX.XXX, put id_rsa.pub
-    6. Option 2: Run this command: ssh-copy-id user@XXX.XXX.XXX
-    7. Run the ansible script with: ansible-playbook main.yml
+    3. Set up SSH keys
+        a. On local host (machine you will use to ssh into the router) open bash in the command prompt and run these commands
+        b. sudo -i
+        c. ssh-keygen
+        d. ssh-copy-id user@XXX.XXX.XXX.XXX (replace user with router username & replace XXX.XXX.XXX.XXX with your router's IP address)
+    3. Edit the "hosts" file in the /etc/ansible directory
+        a. add a line at the top of the following
+            i. [router]
+            ii. XXX.XXX.XXX.XXX ansible_user=user (replace user with router username & replace XXX.XXX.XXX.XXX with your router's IP address)
+    4. Run the ansible script with: ansible-playbook main.yml
