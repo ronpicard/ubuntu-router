@@ -35,3 +35,59 @@
         - "\tnetmask 255.255.255.0"
       become: true
       become_user: root
+
+    - name: "UPDATE_SYSCLT_CONFIG_FILE"
+      lineinfile: 
+        path: /etc/sysctl.conf
+        line: '{{ item }}'
+      with_items:
+        - "net.ipv4.ip_forward=1"
+      become: true
+      become_user: root
+
+    - name: "CREATE_STARTUP_SCRIPT_AND_POPULATE_IPTABLES"
+      lineinfile: 
+        path: /etc/network/if-pre-up.d/iptables
+        line: '{{ item }}'
+      with_items:
+        - "#!/bin/sh"
+        - "/sbin/iptables-restore < /etc/network/iptables"
+      become: true
+      become_user: root
+
+    - name: "CHANGE_STARTUP_SCRIPT_OWNER_TO_ROOT_AND_WRITABLE_BY_ROOT_AND_READABLE_AND_EXECUTABLE_BY_EVERYONE"
+      file:  
+        path: /etc/network/if-pre-up.d/iptables 
+        owner: root
+        mode: 0775
+      become: true
+      become_user: root
+
+    - name: "UPDATE_INTERFACES_FILE"
+      lineinfile: 
+        path: /etc/network/iptables
+        line: '{{ item }}'
+      with_items:
+        - "*nat"
+        - ":PREROUTING ACCEPT [0:0]"
+        - ":INPUT ACCEPT [0:0]"
+        - ":OUTPUT ACCEPT [0:0]"
+        - ":POSTROUTING ACCEPT [0:0]"
+        - ""
+        - "COMMIT"
+        - ""
+        - ""
+        - "*filter"
+        - ":INPUT ACCEPT [0:0]"
+        - ":FORWARD ACCEPT [0:0]"
+        - ":OUTPUT ACCEPT [0:0]"
+        - ""
+        - "# Service rules"
+        - "-A INPUT -j DROP"
+        - ""
+        - "# Forwarding rules"
+        - "-A FORWARD -j DROP"
+        - ""
+        - "COMMIT"
+      become: true
+      become_user: root
