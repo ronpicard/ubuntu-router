@@ -45,7 +45,14 @@
       become: true
       become_user: root
 
-    - name: "CREATE_STARTUP_SCRIPT_AND_POPULATE_IPTABLES"
+    - name: "CREATE_STARTUP_SCRIPT_FILE"
+      file: 
+        path: /etc/network/if-pre-up.d/iptables
+        state: touch
+      become: true
+      become_user: root
+
+    - name: "UPDATE_STARTUP_SCRIPT_FILE"
       lineinfile: 
         path: /etc/network/if-pre-up.d/iptables
         line: '{{ item }}'
@@ -63,7 +70,14 @@
       become: true
       become_user: root
 
-    - name: "UPDATE_INTERFACES_FILE"
+    - name: "UPDATE_IPTABLES_FILE"
+      file: 
+        path: /etc/network/iptables
+        state: touch
+      become: true
+      become_user: root
+
+    - name: "UPDATE_IPTABLES_FILE"
       lineinfile: 
         path: /etc/network/iptables
         line: '{{ item }}'
@@ -74,6 +88,12 @@
         - ":OUTPUT ACCEPT [0:0]"
         - ":POSTROUTING ACCEPT [0:0]"
         - ""
+        - "# enp2s0 is WAN interface, #enp1s0 is LAN interface"
+        - "-A POSTROUTING -o enp2s0 -j MASQUERADE"
+        - ""
+        - "# NAT pinhole: HTTP from WAN to LAN"
+        - "-A PREROUTING -p tcp -m tcp -i enp2s0 --dport 80 -j DNAT --to-destination 192.168.99.100:80"
+        - ""
         - "COMMIT"
         - ""
         - ""
@@ -83,11 +103,70 @@
         - ":OUTPUT ACCEPT [0:0]"
         - ""
         - "# Service rules"
+        - ""
+        - "# basic global accept rules - ICMP, loopback, traceroute, established all accepted"
+        - "-A INPUT -s 127.0.0.0/8 -d 127.0.0.0/8 -i lo -j ACCEPT"
+        - "-A INPUT -p icmp -j ACCEPT"
+        - "-A INPUT -m state --state ESTABLISHED -j ACCEPT"
+        - ""
+        - "# enable traceroute rejections to get sent out"
+        - "-A INPUT -p udp -m udp --dport 33434:33523 -j REJECT --reject-with icmp-port-unreachable"
+        - ""
+        - "# DNS - accept from LAN"
+        - "-A INPUT -i enp1s0 -p tcp --dport 53 -j ACCEPT"
+        - "-A INPUT -i enp1s0 -p udp --dport 53 -j ACCEPT"
+        - ""
+        - "# SSH - accept from LAN"
+        - "-A INPUT -i enp1s0 -p tcp --dport 22 -j ACCEPT"
+        - ""
+        - "# DHCP client requests - accept from LAN"
+        - "-A INPUT -i enp1s0 -p udp --dport 67:68 -j ACCEPT"
+        - ""
+        - "# drop all other inbound traffic"
         - "-A INPUT -j DROP"
         - ""
         - "# Forwarding rules"
+        - ""
+        - "# forward packets along established/related connections"
+        - "-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
+        - ""
+        - "# forward from LAN (enp1s0) to WAN (enp2s0)"
+        - "-A FORWARD -i enp1s0 -o enp2s0 -j ACCEPT"
+        - ""
+        - "# allow traffic from our NAT pinhole"
+        - "-A FORWARD -p tcp -d 192.168.99.100 --dport 80 -j ACCEPT"
+        - ""
+        - "# drop all other forwarded traffic"
         - "-A FORWARD -j DROP"
         - ""
         - "COMMIT"
+      become: true
+      become_user: root
+
+    - name: "INSTALL_DHCP_SERVER"
+      apt:
+        name: isc-dhcp-server
+        update_cache: yes
+      become: true
+      become_user: root
+
+    - name: "CONFIGURE_DHCP_SERVER"
+      lineinfile: 
+        path: /etc/dhcp/dhcpd.conf
+        line: '{{ item }}'
+      with_items:
+        - "subnet 192.168.99.0 netmask 255.255.255.0 {"
+        - "\trange 192.168.99.100 192.168.99.199;"
+        - "\toption routers 192.168.99.1;"
+        - "\toption domain-name-servers 192.168.99.1;"
+        - "\toption broadcast-address 192.168.99.255;"
+        - "}"
+      become: true
+      become_user: root
+
+    - name: "INSTALL_DHCP_SERVER"
+      apt:
+        name: bind9
+        update_cache: yes
       become: true
       become_user: root
