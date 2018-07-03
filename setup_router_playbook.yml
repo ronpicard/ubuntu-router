@@ -3,11 +3,35 @@
   tasks:
 
     - name: "UPDATE_AND_UPGRADE"
-      command: /bin/bash -c "apt-get update -y && apt-get upgrade -y"
+      apt:
+        upgrade=yes
+        update_cache=yes
+        cache_valid_time=3600
       become: true
       become_user: root
 
     - name: "INSTALL_IFUPDOWN"
-      command: /bin/bash -c "apt-get install ifupdown -y"
+      apt:
+        name: ifupdown
+        update_cache: yes
+      become: true
+      become_user: root
+
+    - name: "UPDATE_INTERFACES_FILE"
+      lineinfile: 
+        path: /etc/network/interfaces
+        line: '{{ item }}'
+      with_items:
+        - "# The loopback network interface"
+        - "auto lo"
+        - "iface lo inet loopback"
+        - "# The WAN interface, motherboard interface"
+        - "auto enp2s0"
+        - "iface enp2s0 inet dhcp"
+        - "# The LAN interface, pci express interface"
+        - "auto enp1s0"
+        - "iface enp1s0 inet static"
+        - "\taddress 192.168.99.1"
+        - "\tnetmask 255.255.255.0"
       become: true
       become_user: root

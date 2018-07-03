@@ -34,4 +34,4 @@ How:
             i. [router]
             ii. XXX.XXX.XXX.XXX ansible_user=user (replace user with router username & replace XXX.XXX.XXX.XXX with your router's IP address)
     4. Manually install python2.7 on the ubuntu server router: sudo apt-get install python
-    5. Run the ansible script with: ansible-playbook main.yml --ask-sudo-pass
+    5. Run the ansible script with: ansible-playbook main.yml --ask-become-pass
