@@ -17,6 +17,34 @@
       become: true
       become_user: root
 
+    - name: "INSTALL_DHCP_SERVER"
+      apt:
+        name: isc-dhcp-server
+        update_cache: yes
+      become: true
+      become_user: root
+
+    - name: "CONFIGURE_DHCP_SERVER"
+      lineinfile: 
+        path: /etc/dhcp/dhcpd.conf
+        line: '{{ item }}'
+      with_items:
+        - "subnet 192.168.99.0 netmask 255.255.255.0 {"
+        - "\trange 192.168.99.100 192.168.99.199;"
+        - "\toption routers 192.168.99.1;"
+        - "\toption domain-name-servers 192.168.99.1;"
+        - "\toption broadcast-address 192.168.99.255;"
+        - "}"
+      become: true
+      become_user: root
+
+    - name: "INSTALL_DNS_SERVICE"
+      apt:
+        name: bind9
+        update_cache: yes
+      become: true
+      become_user: root
+
     - name: "UPDATE_INTERFACES_FILE"
       lineinfile: 
         path: /etc/network/interfaces
@@ -33,6 +61,19 @@
         - "iface enp1s0 inet static"
         - "\taddress 192.168.99.1"
         - "\tnetmask 255.255.255.0"
+      become: true
+      become_user: root
+
+    - name: "UPDATE_DHCLIENT_FILE"
+      lineinfile: 
+        path: /etc/dhcp/dhclient.conf
+        line: '{{ item }}'
+      with_items:
+        - 'alias {'
+        - '  interface "enp1s0";'
+        - '  fixed-address 192.168.99.1;'
+        - '  option subnet-mask 255.255.255.0;'
+        - '}'
       become: true
       become_user: root
 
@@ -141,33 +182,5 @@
         - '-A FORWARD -j DROP'
         - '                  '
         - 'COMMIT '
-      become: true
-      become_user: root
-
-    - name: "INSTALL_DHCP_SERVER"
-      apt:
-        name: isc-dhcp-server
-        update_cache: yes
-      become: true
-      become_user: root
-
-    - name: "CONFIGURE_DHCP_SERVER"
-      lineinfile: 
-        path: /etc/dhcp/dhcpd.conf
-        line: '{{ item }}'
-      with_items:
-        - "subnet 192.168.99.0 netmask 255.255.255.0 {"
-        - "\trange 192.168.99.100 192.168.99.199;"
-        - "\toption routers 192.168.99.1;"
-        - "\toption domain-name-servers 192.168.99.1;"
-        - "\toption broadcast-address 192.168.99.255;"
-        - "}"
-      become: true
-      become_user: root
-
-    - name: "INSTALL_DHCP_SERVER"
-      apt:
-        name: bind9
-        update_cache: yes
       become: true
       become_user: root
