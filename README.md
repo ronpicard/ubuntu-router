@@ -35,3 +35,9 @@ How:
             ii. XXX.XXX.XXX.XXX ansible_user=user (replace user with router username & replace XXX.XXX.XXX.XXX with your router's IP address)
     4. Manually install python2.7 on the ubuntu server router: sudo apt-get install python
     5. Run the ansible script with: ansible-playbook main.yml --ask-become-pass
+
+
+Tips:
+Check for DHCP leases here: nano /var/lib/dhcp/dhcpd.leases
+Restart DHCP service with: sudo /etc/init.d/isc-dhcp-server restart
+Enable DHCP on interfaces with: ifdown enp1s0; ifup enp1s0
