@@ -32,6 +32,13 @@
       become: true
       become_user: root
 
+    - name: "INSTALL_IPTABLES_PERSISTENT"
+      apt:
+        name: iptables-persistent netfilter-persistent
+        update_cache: yes
+      become: true
+      become_user: root
+
     - name: "INSTALL_BIND9_DNS_SERVICE"
       apt:
         name: bind9
@@ -239,3 +246,25 @@
         - "COMMIT"
       become: true
       become_user: root
+
+    - name: "RESTART_NETWORK_INTERFACES"
+      command: systemctl restart networking.service
+      become: true
+      become_user: root
+
+    - name: "RESTART_BIND"
+      command: systemctl restart bind
+      become: true
+      become_user: root
+
+    - name: "RESTART_IPTABLES"
+      command: systemctl restart netfilter-persistent
+      become: true
+      become_user: root
+
+    - name: "RESTART_DHCP_SERVER"
+      command: systemctl restart isc-dhcp-server
+      become: true
+      become_user: root
+
+      
