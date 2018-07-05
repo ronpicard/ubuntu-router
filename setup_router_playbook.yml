@@ -10,6 +10,14 @@
       become: true
       become_user: root
 
+    - name: "UNINSTALL_NETPLAN"
+      apt:
+        name: netplan
+        update_cache: yes
+        state: absent
+      become: true
+      become_user: root
+
     - name: "INSTALL_IFUPDOWN"
       apt:
         name: ifupdown
@@ -24,24 +32,19 @@
       become: true
       become_user: root
 
-    - name: "CONFIGURE_DHCP_SERVER"
-      lineinfile: 
-        path: /etc/dhcp/dhcpd.conf
-        line: '{{ item }}'
-      with_items:
-        - "subnet 192.168.99.0 netmask 255.255.255.0 {"
-        - "\trange 192.168.99.100 192.168.99.199;"
-        - "\toption routers 192.168.99.1;"
-        - "\toption domain-name-servers 192.168.99.1;"
-        - "\toption broadcast-address 192.168.99.255;"
-        - "}"
-      become: true
-      become_user: root
-
-    - name: "INSTALL_DNS_SERVICE"
+    - name: "INSTALL_BIND9_DNS_SERVICE"
       apt:
         name: bind9
         update_cache: yes
+      become: true
+      become_user: root
+
+    - name: "UPDATE_SYSCLT_CONFIG_FILE_FOR_IPFORWARDING"
+      lineinfile: 
+        path: /etc/sysctl.conf
+        line: '{{ item }}'
+      with_items:
+        - "net.ipv4.ip_forward=1"
       become: true
       become_user: root
 
@@ -53,43 +56,33 @@
         - "# The loopback network interface"
         - "auto lo"
         - "iface lo inet loopback"
+        - " "
         - "# The WAN interface, motherboard interface"
         - "auto enp2s0"
         - "iface enp2s0 inet dhcp"
+        - "  "
         - "# The LAN interface, pci express interface"
         - "auto enp1s0"
         - "iface enp1s0 inet static"
-        - "\taddress 192.168.99.1"
-        - "\tnetmask 255.255.255.0"
+        - "\taddress 10.0.0.1"
+        - "\tnetwork 10.0.0.0"
+        - "\tnetmask 255.0.0.0"
+        - "\tbroadcast 10.255.255.255"
       become: true
       become_user: root
-
-    - name: "UPDATE_DHCLIENT_FILE"
-      lineinfile: 
-        path: /etc/dhcp/dhclient.conf
-        line: '{{ item }}'
-      with_items:
-        - 'alias {'
-        - '  interface "enp1s0";'
-        - '  fixed-address 192.168.99.1;'
-        - '  option subnet-mask 255.255.255.0;'
-        - '}'
-      become: true
-      become_user: root
-
-    - name: "UPDATE_SYSCLT_CONFIG_FILE"
-      lineinfile: 
-        path: /etc/sysctl.conf
-        line: '{{ item }}'
-      with_items:
-        - "net.ipv4.ip_forward=1"
-      become: true
-      become_user: root
-
+    
     - name: "CREATE_STARTUP_SCRIPT_FILE"
       file: 
         path: /etc/network/if-pre-up.d/iptables
         state: touch
+      become: true
+      become_user: root
+
+    - name: "CHANGE_STARTUP_SCRIPT_FILE_OWNER_WRITABLE_TO_ROOT_AND_READABLE_EXECUTABLE_BY_EVERYONE"
+      file:  
+        path: /etc/network/if-pre-up.d/iptables 
+        owner: root
+        mode: 0775
       become: true
       become_user: root
 
@@ -103,11 +96,18 @@
       become: true
       become_user: root
 
-    - name: "CHANGE_STARTUP_SCRIPT_OWNER_TO_ROOT_AND_WRITABLE_BY_ROOT_AND_READABLE_AND_EXECUTABLE_BY_EVERYONE"
-      file:  
-        path: /etc/network/if-pre-up.d/iptables 
-        owner: root
-        mode: 0775
+    - name: "CONFIGURE_DHCPD_CONF_SERVER_FILE"
+      lineinfile: 
+        path: /etc/dhcp/dhcpd.conf
+        line: '{{ item }}'
+      with_items:
+        - "subnet 10.0.0.0 netmask 255.0.0.0 {"
+        - "\trange 10.0.0.2 10.0.255.254;"
+        - "\toption routers 10.0.0.1;"
+        - "\toption domain-name-servers 10.0.0.1;"
+        - "\toption domain-name "my.router""
+        - "\toption broadcast-address 10.255.255.255;"
+        - "}"
       become: true
       become_user: root
 
@@ -118,69 +118,124 @@
       become: true
       become_user: root
 
+    - name: "UPDATE_BIND_NAME_CONF_OPTION_FILE"
+      lineinfile: 
+        path: /etc/bind/named.conf.options
+        line: '{{ item }}'
+      with_items:
+        - "options {"
+        - "\tdirectory \"/var/cache/bind\";"
+        - ""
+        - "\t// If there is a firewall between you and nameservers you want"
+        - "\t// to talk to, you may need to fix the firewall to allow multiple"
+        - "\t// ports to talk.  See http://www.kb.cert.org/vuls/id/800113"
+        - " "
+        - "\t// If your ISP provided one or more IP addresses for stable"
+        - "\t// nameservers, you probably want to use them as forwarders."
+        - "\t// Uncomment the following block, and insert the addresses replacing"
+        - "\t// the all-0's placeholder."
+        - "  "
+        - "\t forwarders {"
+        - "\t \t8.8.8.8;"
+        - "\t \t8.8.4.4;"
+        - "\t };"
+        - "   "
+        - "\t allow-query {"
+        - "\t \t10.0.0.0/8;"
+        - "\t \t127.0.0.1;"
+        - "\t };"
+        - "    "
+        - "\t allow-transfer {"
+        - "\t \t10.0.0.0/8;"
+        - "\t \t127.0.0.1;"
+        - "\t };"
+        - "     "
+        - "\t//========================================================================"
+        - "\t// If BIND logs error messages about the root key being expired,"
+        - "\t// you will need to update your keys.  See https://www.isc.org/bind-keys"
+        - "\t//========================================================================"
+        - "\tdnssec-validation auto;"
+        - "      "
+        - "\tauth-nxdomain no;    # conform to RFC1035"
+        - "\tlisten-on-v6 { any; };"
+        - "};"
+      become: true
+      become_user: root
+
     - name: "UPDATE_IPTABLES_FILE"
       lineinfile: 
         path: /etc/network/iptables
         line: '{{ item }}'
         insertafter:
       with_items:
-        - '*nat'
-        - ':PREROUTING ACCEPT [0:0]'
-        - ':INPUT ACCEPT [0:0]'
-        - ':OUTPUT ACCEPT [0:0]'
-        - ':POSTROUTING ACCEPT [0:0]'
-        - ' '
-        - '# enp2s0 is WAN interface, #enp1s0 is LAN interface'
-        - '-A POSTROUTING -o enp2s0 -j MASQUERADE'
-        - '  '
-        - '# NAT pinhole: HTTP from WAN to LAN'
-        - '-A PREROUTING -p tcp -m tcp -i enp2s0 --dport 80 -j DNAT --to-destination 192.168.99.100:80'
-        - '   '
-        - 'COMMIT'
-        - '    '
-        - '     '
-        - '*filter'
-        - ':INPUT ACCEPT [0:0] '
-        - ':FORWARD ACCEPT [0:0]'
-        - ':OUTPUT ACCEPT [0:0] '
-        - '      '
-        - '# Service rules'
-        - '       '
-        - '# basic global accept rules - ICMP, loopback, traceroute, established all accepted'
-        - '-A INPUT -s 127.0.0.0/8 -d 127.0.0.0/8 -i lo -j ACCEPT'
-        - '-A INPUT -p icmp -j ACCEPT'
-        - '-A INPUT -m state --state ESTABLISHED -j ACCEPT'
-        - '        '
-        - '# enable traceroute rejections to get sent out'
-        - '-A INPUT -p udp -m udp --dport 33434:33523 -j REJECT --reject-with icmp-port-unreachable'
-        - '         '
-        - '# DNS - accept from LAN'
-        - '-A INPUT -i enp1s0 -p tcp --dport 53 -j ACCEPT'
-        - '-A INPUT -i enp1s0 -p udp --dport 53 -j ACCEPT'
-        - '          '
-        - '# SSH - accept from LAN'
-        - '-A INPUT -i enp1s0 -p tcp --dport 22 -j ACCEPT'
-        - '           '
-        - '# DHCP client requests - accept from LAN'
-        - '-A INPUT -i enp1s0 -p udp --dport 67:68 -j ACCEPT'
-        - '            '
-        - '# drop all other inbound traffic'
-        - '-A INPUT -j DROP'
-        - '             '
-        - '# Forwarding rules'
-        - '              '
-        - '# forward packets along established/related connections'
-        - '-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT'
-        - '               '
-        - '# forward from LAN (enp1s0) to WAN (enp2s0)'
-        - '-A FORWARD -i enp1s0 -o enp2s0 -j ACCEPT'
-        - '                '
-        - '# allow traffic from our NAT pinhole'
-        - '-A FORWARD -p tcp -d 192.168.99.100 --dport 80 -j ACCEPT'
-        - '                 '
-        - '# drop all other forwarded traffic'
-        - '-A FORWARD -j DROP'
-        - '                  '
-        - 'COMMIT '
+        - "###########"
+        - "### NAT ###"
+        - "########### "
+        - "*nat"
+        - ":PREROUTING ACCEPT [0:0]"
+        - ":INPUT ACCEPT [0:0]"
+        - ":OUTPUT ACCEPT [0:0]"
+        - ":POSTROUTING ACCEPT [0:0]"
+        - ""
+        - "# Enable NAT on WAN interface enp3s0"
+        - "-A POSTROUTING -o enp3s0 -j MASQUERADE"
+        - " "
+        - "#### Port Forwarding Section 1 - Add any port forwarding rules here and in Section 2 ####"
+        - "# Example: Port forward HTTP traffic from WAN to LAN client 10.0.0.2"
+        - "-A PREROUTING -p tcp -m tcp -i enp3s0 --dport 80 -j DNAT --to-destination 10.0.0.2:80"
+        - "  "
+        - "   "
+        - "COMMIT"
+        - "    "
+        - "*filter"
+        - ":INPUT ACCEPT [0:0] "
+        - ":FORWARD ACCEPT [0:0]"
+        - ":OUTPUT ACCEPT [0:0] "
+        - "     "
+        - "################"
+        - "### Services ###"
+        - "################ "
+        - "      "
+        - "# ICMP/Loopback - Accept all traffic from the router to itself (loopback) and ICMP (e.g. ping) traffic"
+        - "-A INPUT -s 127.0.0.0/8 -d 127.0.0.0/8 -i lo -j ACCEPT"
+        - "-A INPUT -p icmp -j ACCEPT"
+        - "-A INPUT -m state --state ESTABLISHED -j ACCEPT"
+        - "       "
+        - "# Traceroute - Send a traceroute reject message instead of doing nothing when a client traceroute hits the router"
+        - "-A INPUT -p udp -m udp --dport 33434:33523 -j REJECT --reject-with icmp-port-unreachable"
+        - "        "
+        - "# DNS - Accept DNS requests traffic (port 53) from the private LAN interface"
+        - "-A INPUT -i enp2s0 -p tcp --dport 53 -j ACCEPT"
+        - "-A INPUT -i enp2s0 -p udp --dport 53 -j ACCEPT"
+        - "         "
+        - "# SSH - Accept SSH traffic (port 22) from the private LAN so we can manage the router from any machine on the private network"
+        - "-A INPUT -i enp2s0 -p tcp --dport 22 -j ACCEPT"
+        - "          "
+        - "# DHCP - Accept DHCP requests from the private LAN so that clients can get IP addresses from the router"
+        - "-A INPUT -i enp2s0 -p udp --dport 67:68 -j ACCEPT"
+        - "           "
+        - "# Drop any other traffic that hits the router"
+        - "-A INPUT -j DROP"
+        - "            "
+        - "########################"
+        - "### Forwarding rules ###"
+        - "######################## "
+        - "             "
+        - "# forward packets to related/established connections"
+        - "-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
+        - "              "
+        - "# Forward from LAN enp2s0 interface to WAN enp3s0 interface"
+        - "-A FORWARD -i enp2s0 -o enp3s0 -j ACCEPT"
+        - "               "
+        - "                "
+        - "#### Port Forwarding Section 2 - Add any port forwarding rules here and in Section 1 ####"
+        - "# Example: Allow HTTP traffic from our NAT rule to client 10.0.0.2"
+        - "-A FORWARD -p tcp -d 10.0.0.2 --dport 80 -j ACCEPT"
+        - "                 "
+        - "                  "
+        - "# drop all other forwarded traffic"
+        - "-A FORWARD -j DROP"
+        - "                   "
+        - "COMMIT"
       become: true
       become_user: root

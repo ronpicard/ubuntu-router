@@ -40,4 +40,4 @@
 ## Tips:
 1. Check for DHCP leases here: nano /var/lib/dhcp/dhcpd.leases
 2. Restart DHCP service with: sudo /etc/init.d/isc-dhcp-server restart
-3. Enable DHCP on interfaces with: ifdown enp1s0; ifup enp1s0
+3. Update iptables: sudo systemctl restart netfilter-persistent
