@@ -15,8 +15,8 @@ Who:
 
 How:
     1. Install linux subsystem Windows 10
-    ...*1. Control Panel -> Programs -> Turn Windows Features on or off -> Windows Subsystem for Linux
-    ...*2. Go to microsoft store, seach Linux, and install Ubuntu
+       - a. Control Panel -> Programs -> Turn Windows Features on or off -> Windows Subsystem for Linux
+       - b. Go to microsoft store, seach Linux, and install Ubuntu
     2. Install ansible
         a. Go to command prompt, type bash
         b. sudo -s
