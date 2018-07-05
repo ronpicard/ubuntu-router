@@ -1,19 +1,19 @@
 # ubuntu-router
 
-What: 
+##What: 
 1. An Ansible meta-automation solution for automatically creating a home ubuntu server router.
 
-When:
+##When:
 1. Last Updated: 2018-07-03
 2. First Started: 2018-07-02
 
-Why:
+##Why:
 1. Ubuntu router will be flexible and secure. 
 
-Who: 
+##Who: 
 1. Developed for anyone who wants to have a home router solution solution.
 
-How:
+##How:
 1. Install linux subsystem Windows 10
     - a. Control Panel -> Programs -> Turn Windows Features on or off -> Windows Subsystem for Linux
     - b. Go to microsoft store, seach Linux, and install Ubuntu
