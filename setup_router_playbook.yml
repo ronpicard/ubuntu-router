@@ -171,21 +171,14 @@
       become: true
       become_user: root
 
-    - name: "UPDATE_IPTABLES_FILE"
-      file: 
-        path: /etc/network/iptables
-        state: touch
-      become: true
-      become_user: root
-
-    - name: Ansible delete file example
+    - name: "DELETE_BIND_NAME_CONF_OPTION_FILE"
       file:
         path: /etc/bind/named.conf.options
         state: absent
       become: true
       become_user: root
 
-    - name: "UPDATE_IPTABLES_FILE"
+    - name: "CREATE_BIND_NAME_CONF_OPTION_FILE"
       file: 
         path: /etc/bind/named.conf.options
         state: touch
@@ -236,9 +229,23 @@
       become: true
       become_user: root
 
+    - name: "DELETE_IPTABLES_FILE"
+      file:
+        path: /etc/iptables/rules.v4
+        state: absent
+      become: true
+      become_user: root
+
+    - name: "CREATE_IPTABLES_FILE"
+      file: 
+        path: /etc/iptables/rules.v4
+        state: touch
+      become: true
+      become_user: root
+
     - name: "UPDATE_IPTABLES_FILE"
       lineinfile: 
-        path: /etc/network/iptables
+        path: /etc/iptables/rules.v4
         line: '{{ item }}'
         insertafter:
       with_items:
@@ -310,7 +317,7 @@
         - "# drop all other forwarded traffic"
         - "-A FORWARD -j DROP"
         - "                   "
-        - "COMMIT"
+        - "COMMIT "
       become: true
       become_user: root
 
@@ -319,15 +326,15 @@
 #      become: true
 #      become_user: root
 
-    - name: "RESTART_BIND"
-      command: systemctl restart bind9
-      become: true
-      become_user: root
+#    - name: "RESTART_BIND"
+#      command: systemctl restart bind9
+#      become: true
+#      become_user: root
 
-    - name: "RESTART_DHCP_SERVER"
-      command: systemctl restart isc-dhcp-server
-      become: true
-      become_user: root
+#    - name: "RESTART_DHCP_SERVER"
+#      command: systemctl restart isc-dhcp-server
+#      become: true
+#      become_user: root
 #
 #    - name: "RESTART_IPTABLES"
 #      command: systemctl restart netfilter-persistent
