@@ -34,7 +34,14 @@
 
     - name: "INSTALL_IPTABLES_PERSISTENT"
       apt:
-        name: iptables-persistent netfilter-persistent
+        name: iptables-persistent
+        update_cache: yes
+      become: true
+      become_user: root
+
+    - name: "INSTALL_NETFILTER_PERSISTENT"
+      apt:
+        name: netfilter-persistent
         update_cache: yes
       become: true
       become_user: root
@@ -99,7 +106,7 @@
         line: '{{ item }}'
       with_items:
         - "#!/bin/sh"
-        - "/sbin/iptables-restore < /etc/network/iptables"
+        - "/sbin/iptables-restore < /etc/iptables/rules.v4"
       become: true
       become_user: root
 
@@ -108,12 +115,18 @@
         path: /etc/dhcp/dhcpd.conf
         line: '{{ item }}'
       with_items:
+        - "default-lease-time 600;"
+        - "max-lease-time 7200;"
+        - "ddns-update-style none;"
+        - "authoritative;"
+        - "log-facility local7;"
+        - " "
         - "subnet 10.0.0.0 netmask 255.0.0.0 {"
-        - "\trange 10.0.0.2 10.0.255.254;"
-        - "\toption routers 10.0.0.1;"
-        - "\toption domain-name-servers 10.0.0.1;"
-        - "\toption domain-name "my.router""
-        - "\toption broadcast-address 10.255.255.255;"
+        - "  range 10.0.0.2 10.0.255.254;"
+        - "  option routers 10.0.0.1;"
+        - "  option domain-name-servers 10.0.0.1;"
+        - "  option domain-name \"example.local\""
+        - "  option broadcast-address 10.255.255.255;"
         - "}"
       become: true
       become_user: root
@@ -247,18 +260,13 @@
       become: true
       become_user: root
 
-    - name: "RESTART_NETWORK_INTERFACES"
-      command: systemctl restart networking.service
-      become: true
-      become_user: root
+#    - name: "RESTART_NETWORK_INTERFACES"
+#      command: systemctl restart networking.service
+#      become: true
+#      become_user: root
 
     - name: "RESTART_BIND"
       command: systemctl restart bind
-      become: true
-      become_user: root
-
-    - name: "RESTART_IPTABLES"
-      command: systemctl restart netfilter-persistent
       become: true
       become_user: root
 
@@ -266,5 +274,9 @@
       command: systemctl restart isc-dhcp-server
       become: true
       become_user: root
+#
+#    - name: "RESTART_IPTABLES"
+#      command: systemctl restart netfilter-persistent
+#      become: true
+#      become_user: root
 
-      
