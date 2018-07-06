@@ -62,6 +62,20 @@
       become: true
       become_user: root
 
+    - name: "DELETE_INTERFACES_FILE"
+      file:
+        path: /etc/network/interfaces
+        state: absent
+      become: true
+      become_user: root
+
+    - name: "CREATE_INTERFACES_FILE"
+      file: 
+        path: /etc/network/interfaces
+        state: touch
+      become: true
+      become_user: root
+
     - name: "UPDATE_INTERFACES_FILE"
       lineinfile: 
         path: /etc/network/interfaces
@@ -85,6 +99,13 @@
       become: true
       become_user: root
     
+    - name: "DELETE_STARTUP_SCRIPT_FILE"
+      file:
+        path: /etc/network/if-pre-up.d/iptables
+        state: absent
+      become: true
+      become_user: root
+
     - name: "CREATE_STARTUP_SCRIPT_FILE"
       file: 
         path: /etc/network/if-pre-up.d/iptables
@@ -110,17 +131,36 @@
       become: true
       become_user: root
 
+    - name: "DELETE_STARTUP_SCRIPT_FILE"
+      file:
+        path: /etc/dhcp/dhcpd.conf
+        state: absent
+      become: true
+      become_user: root
+
+    - name: "CREATE_STARTUP_SCRIPT_FILE"
+      file: 
+        path: /etc/dhcp/dhcpd.conf
+        state: touch
+      become: true
+      become_user: root
+
     - name: "CONFIGURE_DHCPD_CONF_SERVER_FILE"
       lineinfile: 
         path: /etc/dhcp/dhcpd.conf
         line: '{{ item }}'
       with_items:
+        - "host pi {"
+        - "  hardware ethernet XX:XX:XX:XX:XX:XX;"
+        - "  fixed-address 10.0.0.2;"
+        - "}"
+        - " "
         - "default-lease-time 600;"
         - "max-lease-time 7200;"
         - "ddns-update-style none;"
         - "authoritative;"
         - "log-facility local7;"
-        - " "
+        - "  "
         - "subnet 10.0.0.0 netmask 255.0.0.0 {"
         - "  range 10.0.0.2 10.0.255.254;"
         - "  option routers 10.0.0.1;"
@@ -134,6 +174,20 @@
     - name: "UPDATE_IPTABLES_FILE"
       file: 
         path: /etc/network/iptables
+        state: touch
+      become: true
+      become_user: root
+
+    - name: Ansible delete file example
+      file:
+        path: /etc/bind/named.conf.options
+        state: absent
+      become: true
+      become_user: root
+
+    - name: "UPDATE_IPTABLES_FILE"
+      file: 
+        path: /etc/bind/named.conf.options
         state: touch
       become: true
       become_user: root
@@ -266,7 +320,7 @@
 #      become_user: root
 
     - name: "RESTART_BIND"
-      command: systemctl restart bind
+      command: systemctl restart bind9
       become: true
       become_user: root
 
