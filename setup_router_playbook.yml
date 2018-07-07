@@ -150,24 +150,30 @@
         path: /etc/dhcp/dhcpd.conf
         line: '{{ item }}'
       with_items:
-        - "host pi {"
-        - "  hardware ethernet XX:XX:XX:XX:XX:XX;"
-        - "  fixed-address 10.0.0.2;"
-        - "}"
-        - " "
+        - ""
         - "default-lease-time 600;"
         - "max-lease-time 7200;"
         - "ddns-update-style none;"
         - "authoritative;"
         - "log-facility local7;"
+        - " "
+        - "host pi_vpn {"
+        - "    hardware ethernet XX:XX:XX:XX:XX:XX;"
+        - "    fixed-address 10.0.0.2;"
+        - "}"
         - "  "
+        - "host router_nas {"
+        - "    hardware ethernet XX:XX:XX:XX:XX:XX;"
+        - "    fixed-address 10.0.0.3;"
+        - "} "
+        - "   "
         - "subnet 10.0.0.0 netmask 255.0.0.0 {"
         - "  range 10.0.0.2 10.0.255.254;"
         - "  option routers 10.0.0.1;"
         - "  option domain-name-servers 10.0.0.1;"
         - "  option domain-name \"example.local\""
         - "  option broadcast-address 10.255.255.255;"
-        - "}"
+        - "}   "
       become: true
       become_user: root
 
@@ -249,75 +255,110 @@
         line: '{{ item }}'
         insertafter:
       with_items:
-        - "###########"
-        - "### NAT ###"
-        - "########### "
+        - "###################################"
+        - "############### NAT ###############"
+        - "####################################"
         - "*nat"
         - ":PREROUTING ACCEPT [0:0]"
         - ":INPUT ACCEPT [0:0]"
         - ":OUTPUT ACCEPT [0:0]"
         - ":POSTROUTING ACCEPT [0:0]"
-        - ""
+        - "#"
         - "# Enable NAT on WAN interface enp3s0"
-        - "-A POSTROUTING -o enp3s0 -j MASQUERADE"
-        - " "
+        - "-A POSTROUTING -o enp2s0 -j MASQUERADE"
+        - "##"
         - "#### Port Forwarding Section 1 - Add any port forwarding rules here and in Section 2 ####"
         - "# Example: Port forward HTTP traffic from WAN to LAN client 10.0.0.2"
-        - "-A PREROUTING -p tcp -m tcp -i enp3s0 --dport 80 -j DNAT --to-destination 10.0.0.2:80"
-        - "  "
-        - "   "
+        - "-A PREROUTING -p tcp -m tcp -i enp2s0 --dport 80 -j DNAT --to-destination 10.0.0.2:80"
+        - "###"
         - "COMMIT"
-        - "    "
+        - ""
         - "*filter"
-        - ":INPUT ACCEPT [0:0] "
+        - ":INPUT ACCEPT [0:0]#"
         - ":FORWARD ACCEPT [0:0]"
-        - ":OUTPUT ACCEPT [0:0] "
-        - "     "
-        - "################"
-        - "### Services ###"
-        - "################ "
-        - "      "
+        - ":OUTPUT ACCEPT [0:0]#"
+        - "####"
+        - "##########################################"
+        - "############### Services #################"
+        - "###########################################"
+        - "#####"
         - "# ICMP/Loopback - Accept all traffic from the router to itself (loopback) and ICMP (e.g. ping) traffic"
         - "-A INPUT -s 127.0.0.0/8 -d 127.0.0.0/8 -i lo -j ACCEPT"
         - "-A INPUT -p icmp -j ACCEPT"
         - "-A INPUT -m state --state ESTABLISHED -j ACCEPT"
-        - "       "
+        - "######"
         - "# Traceroute - Send a traceroute reject message instead of doing nothing when a client traceroute hits the router"
         - "-A INPUT -p udp -m udp --dport 33434:33523 -j REJECT --reject-with icmp-port-unreachable"
-        - "        "
+        - "#######"
         - "# DNS - Accept DNS requests traffic (port 53) from the private LAN interface"
-        - "-A INPUT -i enp2s0 -p tcp --dport 53 -j ACCEPT"
-        - "-A INPUT -i enp2s0 -p udp --dport 53 -j ACCEPT"
-        - "         "
+        - "-A INPUT -i enp1s0 -p tcp --dport 53 -j ACCEPT"
+        - "-A INPUT -i enp1s0 -p udp --dport 53 -j ACCEPT"
+        - "########"
         - "# SSH - Accept SSH traffic (port 22) from the private LAN so we can manage the router from any machine on the private network"
-        - "-A INPUT -i enp2s0 -p tcp --dport 22 -j ACCEPT"
-        - "          "
+        - "-A INPUT -i enp1s0 -p tcp --dport 22 -j ACCEPT"
+        - "#########"
         - "# DHCP - Accept DHCP requests from the private LAN so that clients can get IP addresses from the router"
-        - "-A INPUT -i enp2s0 -p udp --dport 67:68 -j ACCEPT"
-        - "           "
+        - "-A INPUT -i enp1s0 -p udp --dport 67:68 -j ACCEPT"
+        - "##########"
         - "# Drop any other traffic that hits the router"
         - "-A INPUT -j DROP"
-        - "            "
-        - "########################"
-        - "### Forwarding rules ###"
-        - "######################## "
-        - "             "
+        - "###########"
+        - "#################################################"
+        - "################ Forwarding rules ###############"
+        - "##################################################"
+        - "############"
         - "# forward packets to related/established connections"
         - "-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
-        - "              "
+        - "#############"
         - "# Forward from LAN enp2s0 interface to WAN enp3s0 interface"
-        - "-A FORWARD -i enp2s0 -o enp3s0 -j ACCEPT"
-        - "               "
-        - "                "
+        - "-A FORWARD -i enp1s0 -o enp2s0 -j ACCEPT"
+        - "##############"
         - "#### Port Forwarding Section 2 - Add any port forwarding rules here and in Section 1 ####"
         - "# Example: Allow HTTP traffic from our NAT rule to client 10.0.0.2"
         - "-A FORWARD -p tcp -d 10.0.0.2 --dport 80 -j ACCEPT"
-        - "                 "
-        - "                  "
+        - "###############"
         - "# drop all other forwarded traffic"
         - "-A FORWARD -j DROP"
-        - "                   "
-        - "COMMIT "
+        - "################"
+        - "COMMIT#"
+        - "####################################################"
+      become: true
+      become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND"
+      replace: 
+        path: /etc/iptables/rules.v4
+        regexp: 'COMMIT#'
+        replace: 'COMMIT'
+      become: true
+      become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND2"
+      replace: 
+        path: /etc/iptables/rules.v4
+        regexp: ':INPUT ACCEPT \[0:0\]#'
+        replace: ":INPUT ACCEPT [0:0]"
+      become: true
+      become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND3"
+      replace: 
+        path: /etc/iptables/rules.v4
+        regexp: ':OUTPUT ACCEPT \[0:0\]#'
+        replace: ":OUTPUT ACCEPT [0:0]"
+      become: true
+      become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND4"
+      replace: 
+        path: /etc/iptables/rules.v4
+        regexp: '####################################################'
+        replace: ''
+      become: true
+      become_user: root
+
+    - name: "REBOOT"
+      command: reboot
       become: true
       become_user: root
 
