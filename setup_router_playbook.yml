@@ -131,6 +131,96 @@
       become: true
       become_user: root
 
+    - name: "DELETE_DHCP_FILE"
+      file:
+        path: /etc/default/isc-dhcp-server
+        state: absent
+      become: true
+      become_user: root
+
+    - name: "CREATE_DHCP_FILE"
+      file: 
+        path: /etc/default/isc-dhcp-server
+        state: touch
+      become: true
+      become_user: root
+
+    - name: "CONFIGURE_DHCP_FILE"
+      lineinfile: 
+        path: /etc/default/isc-dhcp-server
+        line: '{{ item }}'
+      with_items:
+        - "#1"
+        - "# Defaults for isc-dhcp-server (sourced by /etc/init.d/isc-dhcp-server)"
+        - "#2"
+        - "# Path to dhcpd config file (default: /etc/dhcp/dhcpd.conf)."
+        - "DHCPDv4_CONF=/etc/dhcp/dhcpd.conf"
+        - "#DHCPDv6_CONF=/etc/dhcp/dhcpd6.conf"
+        - "#3"
+        - "# Path to dhcpd's PID file (default: /var/run/dhcpd.pid)."
+        - "#DHCPDv4_PID=/var/run/dhcpd.pid"
+        - "#DHCPDv6_PID=/var/run/dhcpd6.pid"
+        - "#4"
+        - "# Additional options to start dhcpd with."
+        - "#       Don't use options -cf or -pf here; use DHCPD_CONF/ DHCPD_PID instead"
+        - "#OPTIONS=\"\""
+        - "#5"
+        - "# On what interfaces should the DHCP server (dhcpd) serve DHCP requests?"
+        - "#       Separate multiple interfaces with spaces, e.g. \"eth0 eth1\"."
+        - "INTERFACESv4=\"en1s0\""
+        - "INTERFACESv6=\"\""
+        - "#6"
+      become: true
+      become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND1"
+      replace: 
+        path: /etc/default/isc-dhcp-server
+        regexp: '#1'
+        replace: ''
+      become: true
+      become_user: root
+    
+    - name: "REPLACE_LINE_WORKAROUND2"
+      replace: 
+        path: /etc/default/isc-dhcp-server
+        regexp: '#2'
+        replace: ''
+      become: true
+      become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND3"
+      replace: 
+        path: /etc/default/isc-dhcp-server
+        regexp: '#3'
+        replace: ''
+      become: true
+      become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND4"
+      replace: 
+        path: /etc/default/isc-dhcp-server
+        regexp: '#4'
+        replace: ''
+      become: true
+      become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND5"
+      replace: 
+        path: /etc/default/isc-dhcp-server
+        regexp: '#5'
+        replace: ''
+      become: true
+      become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND6"
+      replace: 
+        path: /etc/default/isc-dhcp-server
+        regexp: '#6'
+        replace: ''
+      become: true
+      become_user: root
+
     - name: "DELETE_STARTUP_SCRIPT_FILE"
       file:
         path: /etc/dhcp/dhcpd.conf
@@ -171,7 +261,7 @@
         - "  range 10.0.0.2 10.0.255.254;"
         - "  option routers 10.0.0.1;"
         - "  option domain-name-servers 10.0.0.1;"
-        - "  option domain-name \"example.local\""
+        - "  option domain-name \"example.local\";"
         - "  option broadcast-address 10.255.255.255;"
         - "}   "
       become: true
@@ -216,17 +306,17 @@
         - "\t allow-query {"
         - "\t \t10.0.0.0/8;"
         - "\t \t127.0.0.1;"
-        - "\t };"
+        - "\t }; "
         - "    "
         - "\t allow-transfer {"
-        - "\t \t10.0.0.0\/8;"
-        - "\t \t127.0.0.1;"
-        - "\t };"
+        - "\t \t10.0.0.0/8; "
+        - "\t \t127.0.0.1; "
+        - "\t };  "
         - "     "
         - "\t//========================================================================"
         - "\t// If BIND logs error messages about the root key being expired,"
         - "\t// you will need to update your keys.  See https://www.isc.org/bind-keys"
-        - "\t//========================================================================"
+        - "\t//========================================================================="
         - "\tdnssec-validation auto;"
         - "      "
         - "\tauth-nxdomain no;    # conform to RFC1035"
@@ -255,9 +345,9 @@
         line: '{{ item }}'
         insertafter:
       with_items:
-        - "###################################"
-        - "############### NAT ###############"
-        - "####################################"
+        - "#####################"
+        - "######## NAT ########"
+        - "######################"
         - "*nat"
         - ":PREROUTING ACCEPT [0:0]"
         - ":INPUT ACCEPT [0:0]"
@@ -270,17 +360,17 @@
         - "#### Port Forwarding Section 1 - Add any port forwarding rules here and in Section 2 ####"
         - "# Example: Port forward HTTP traffic from WAN to LAN client 10.0.0.2"
         - "-A PREROUTING -p tcp -m tcp -i enp2s0 --dport 80 -j DNAT --to-destination 10.0.0.2:80"
-        - "###"
-        - "COMMIT"
         - ""
+        - "COMMIT"
+        - "#1"
         - "*filter"
         - ":INPUT ACCEPT [0:0]#"
         - ":FORWARD ACCEPT [0:0]"
         - ":OUTPUT ACCEPT [0:0]#"
         - "####"
-        - "##########################################"
-        - "############### Services #################"
-        - "###########################################"
+        - "########################"
+        - "####### Services #######"
+        - "#########################"
         - "#####"
         - "# ICMP/Loopback - Accept all traffic from the router to itself (loopback) and ICMP (e.g. ping) traffic"
         - "-A INPUT -s 127.0.0.0/8 -d 127.0.0.0/8 -i lo -j ACCEPT"
@@ -303,9 +393,9 @@
         - "# Drop any other traffic that hits the router"
         - "-A INPUT -j DROP"
         - "###########"
-        - "#################################################"
-        - "################ Forwarding rules ###############"
-        - "##################################################"
+        - "###########################"
+        - "#### Forwarding rules #####"
+        - "############################"
         - "############"
         - "# forward packets to related/established connections"
         - "-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT"
@@ -319,9 +409,9 @@
         - "###############"
         - "# drop all other forwarded traffic"
         - "-A FORWARD -j DROP"
-        - "################"
+        - "#2"
         - "COMMIT#"
-        - "####################################################"
+        - "#3"
       become: true
       become_user: root
 
@@ -352,15 +442,31 @@
     - name: "REPLACE_LINE_WORKAROUND4"
       replace: 
         path: /etc/iptables/rules.v4
-        regexp: '####################################################'
+        regexp: '#1'
         replace: ''
       become: true
       become_user: root
 
-    - name: "REBOOT"
-      command: reboot
+    - name: "REPLACE_LINE_WORKAROUND5"
+      replace: 
+        path: /etc/iptables/rules.v4
+        regexp: '#2'
+        replace: ''
       become: true
       become_user: root
+
+    - name: "REPLACE_LINE_WORKAROUND6"
+      replace: 
+        path: /etc/iptables/rules.v4
+        regexp: '#3'
+        replace: ''
+      become: true
+      become_user: root
+
+#    - name: "REBOOT"
+#      command: reboot
+#      become: true
+#      become_user: root
 
 #    - name: "RESTART_NETWORK_INTERFACES"
 #      command: systemctl restart networking.service
