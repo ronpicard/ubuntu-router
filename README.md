@@ -40,4 +40,12 @@
 ## Tips:
 1. Check for DHCP leases here: nano /var/lib/dhcp/dhcpd.leases
 2. Restart DHCP service with: sudo /etc/init.d/isc-dhcp-server restart
-3. Update iptables: sudo systemctl restart netfilter-persistent
+3. Restart iptables: sudo systemctl restart netfilter-persistent
+4. Enable iptables: sudo systemctl restart netfilter-persistent
+5. Update iptables:sudo /etc/network/if-pre-up.d/iptables
+6. Restart DNS: sudo systemctl restart bind9
+7. Restart Networking: sudo systemctl restart networking.service
+8. Check Service Status (+ means service running, - means not running): sudo service --status-all 
+9. Note: if interfaces won't start, it typically means /etc/iptables/rules.v4 has an error
+10. Note: /etc/iptables/rules.v4 is whitepsace sensitive. Each COMMIT lines must have not spaces before or after the work COMMIT and a blank line (with no spaces) above and below it. Also make sure that no line has extra whitepsace anywhere.
+11. Attempt to raise or lower interfaces: ifdown enp1s0, ifup enp1s0
