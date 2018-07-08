@@ -49,3 +49,4 @@
 9. Note: if interfaces won't start, it typically means /etc/iptables/rules.v4 has an error
 10. Note: /etc/iptables/rules.v4 is whitepsace sensitive. Each COMMIT lines must have not spaces before or after the work COMMIT and a blank line (with no spaces) above and below it. Also make sure that no line has extra whitepsace anywhere.
 11. Attempt to raise or lower interfaces: ifdown enp1s0, ifup enp1s0
+12. Note: I had a Motorola SBG6580 Surfboard Router/Modem. In order to switch it to Modem only mode, disable NAPT (requires a restart). If you need log back in use 192.168.100.1.
